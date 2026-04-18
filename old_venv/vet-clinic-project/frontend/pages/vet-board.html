@@ -157,7 +157,13 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
                         <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-                            <h3 class="font-bold">รายการนัดหมาย/คิว</h3>
+                            <div class="flex items-center gap-4">
+                                <h3 class="font-bold">รายการนัดหมาย/คิว</h3>
+                                <label class="flex items-center gap-2 text-xs font-bold text-slate-500 cursor-pointer hover:text-teal-600 transition-colors">
+                                    <input type="checkbox" id="filter-untreated" onchange="loadAppointments()" class="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500">
+                                    แสดงเฉพาะที่ยังไม่ตรวจ
+                                </label>
+                            </div>
                             <button onclick="loadAppointments()" class="text-teal-600 hover:rotate-180 transition-transform duration-500"><i class="fas fa-sync-alt"></i></button>
                         </div>
                         <table class="w-full">
@@ -564,11 +570,30 @@
             try {
                 allAppointments = await VetApi.fetchAppointments();
                 
-                // เรียงตามวันที่/เวลาล่าสุดขึ้นก่อน
-                allAppointments.sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at));
+                // Chronological sorting: Earlier appointments first (Ascending)
+                allAppointments.sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+
+                // Untreated Filter Logic
+                const showUntreatedOnly = document.getElementById('filter-untreated')?.checked;
+                let displayAppts = allAppointments;
+                if (showUntreatedOnly) {
+                    displayAppts = allAppointments.filter(a => ['confirmed', 'waiting', 'pending'].includes(a.status));
+                }
 
                 const list = document.getElementById('appt-rows');
-                list.innerHTML = allAppointments.map(a => `
+                list.innerHTML = displayAppts.map(a => {
+                    const statusConfig = {
+                        'pending': 'bg-slate-100 text-slate-500',
+                        'confirmed': 'bg-teal-100 text-teal-700',
+                        'waiting': 'bg-amber-100 text-amber-700',
+                        'examining': 'bg-blue-100 text-blue-700',
+                        'payment': 'bg-purple-100 text-purple-700',
+                        'completed': 'bg-emerald-100 text-emerald-700',
+                        'cancelled': 'bg-red-100 text-red-700'
+                    };
+                    const badgeClass = statusConfig[a.status] || 'bg-gray-100 text-gray-700';
+
+                    return `
                     <tr class="hover:bg-teal-50 group transition-all cursor-pointer" onclick="selectAppt('${a.id}')">
                         <td class="p-6 border-l-4 border-transparent group-hover:border-teal-500">
                             <div class="font-black text-teal-600">${new Date(a.scheduled_at).toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'2-digit'})}</div>
@@ -581,9 +606,9 @@
                         </td>
                         <td class="p-6 text-sm text-slate-500">${a.reason || 'ตรวจทั่วไป'}</td>
                         <td class="p-6">
-                            <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                a.status === 'confirmed' ? 'bg-teal-100 text-teal-700' : 'bg-amber-100 text-amber-700'
-                            }">${a.status === 'confirmed' ? 'CONFIRMED' : 'WAITING'}</span>
+                            <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${badgeClass}">
+                                ${a.status.toUpperCase()}
+                            </span>
                         </td>
                         <td class="p-6 text-right">
                             <div class="flex justify-end gap-2">
@@ -593,7 +618,8 @@
                             </div>
                         </td>
                     </tr>
-                `).join('') || '<tr><td colspan="5" class="p-20 text-center text-slate-300 italic">ไม่มีนัดหมาย</td></tr>';
+                    `;
+                }).join('') || '<tr><td colspan="5" class="p-20 text-center text-slate-300 italic">ไม่มีนัดหมายที่ตรงตามเงื่อนไข</td></tr>';
                 document.getElementById('stat-appt').textContent = allAppointments.filter(a => a.status === 'pending').length;
                 
                 // Dropdown: แสดงเฉพาะคิวที่ยังไม่ได้รับการรักษา
@@ -986,7 +1012,10 @@
                     <div class="bg-slate-50 p-5 rounded-3xl border border-slate-100 hover:border-teal-300 transition-colors">
                         <div class="flex justify-between items-start mb-3">
                             <div class="font-black text-teal-800"><i class="far fa-calendar-check mr-1 text-teal-500"></i> ${new Date(r.created_at).toLocaleString()}</div>
-                            <span class="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${r.is_paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${r.is_paid ? 'ชำระเงินแล้ว' : 'ค้างชำระ'}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${r.is_paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${r.is_paid ? 'ชำระเงินแล้ว' : 'ค้างชำระ'}</span>
+                                <button onclick="deletePet('${petId}', event)" class="w-6 h-6 bg-red-50 text-red-500 rounded-md hover:bg-red-500 hover:text-white transition-all flex items-center justify-center text-[10px]" title="ลบสัตว์เลี้ยงนี้"><i class="fas fa-trash-alt"></i></button>
+                            </div>
                         </div>
                         <div class="text-sm text-slate-600 mb-2 leading-relaxed"><strong>อาการ:</strong> ${r.symptoms}</div>
                         <div class="text-sm text-slate-600 mb-3 leading-relaxed"><strong>วินิจฉัย:</strong> ${r.diagnosis}</div>
@@ -1014,6 +1043,16 @@
             } catch(e) {
                 alert("เกิดข้อผิดพลาดในการลบสินค้านี้: " + e.message);
             }
+        }
+
+        async function deletePet(id, event) {
+            if(event) event.stopPropagation();
+            if(!confirm("⚠️ ยืนยันการลบสัตว์เลี้ยงนี้? ข้อมูลประวัติและนัดหมายทั้งหมดของตัวนี้จะถูกลบถาวร!")) return;
+            try {
+                await VetApi.deletePet(id);
+                alert("ลบข้อมูลสำเร็จ");
+                location.reload();
+            } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
         }
 
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }

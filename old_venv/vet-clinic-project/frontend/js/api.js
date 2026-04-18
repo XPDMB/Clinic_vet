@@ -7,9 +7,11 @@
   // Otherwise, fallback to 127.0.0.1:8000 (Django dev server).
   // หากเรารันผ่าน ngrok หรือ domain อื่นๆ ให้ใช้ origin นั้นๆ เป็น base API ทันที
   const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-  const isDefaultDevPort = window.location.port === "8000";
   
-  const API_BASE = "https://primo.pythonanywhere.com/api/v1";
+  // Dynamic API Base URL
+  const API_BASE = isLocalhost 
+    ? "http://127.0.0.1:8000/api/v1" 
+    : "https://primo.pythonanywhere.com/api/v1";
 
   // API Base URL determined automatically
 
@@ -206,6 +208,24 @@
       return apiFetch("/staff-shifts/", {
         method: "POST",
         body: JSON.stringify(body),
+      });
+    },
+
+    // User Management
+    fetchUsers: function () {
+      return apiFetch("/users/");
+    },
+
+    updateUserRole: function (id, role) {
+      return apiFetch("/users/" + id + "/", {
+        method: "PUT",
+        body: JSON.stringify({ role: role }),
+      });
+    },
+
+    deleteUser: function (id) {
+      return apiFetch("/users/" + id + "/", {
+        method: "DELETE",
       });
     },
   };

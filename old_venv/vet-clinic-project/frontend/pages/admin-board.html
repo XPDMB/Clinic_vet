@@ -197,12 +197,7 @@
 
         async function loadUsers() {
             try {
-                const res = await fetch(`${VetApi.BASE_URL}/users/`, {
-                    headers: { "Authorization": `Token ${localStorage.getItem("token")}` }
-                });
-                if (!res.ok) throw new Error("Failed to fetch users");
-
-                allUsers = await res.json();
+                allUsers = await VetApi.fetchUsers();
                 renderUsers(allUsers);
 
                 // Update stats based on all users
@@ -294,19 +289,7 @@
         async function updateRole(newRole) {
             const userId = document.getElementById('edit-user-id').value;
             try {
-                const res = await fetch(`${VetApi.BASE_URL}/users/${userId}/`, {
-                    method: 'PUT',
-                    headers: {
-                        "Authorization": `Token ${localStorage.getItem("token")}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ role: newRole })
-                });
-
-                if (!res.ok) {
-                    const d = await res.json();
-                    throw new Error(d.detail || "Update failed");
-                }
+                await VetApi.updateUserRole(userId, newRole);
 
                 closeModal('role-modal');
                 // Refresh list
@@ -325,14 +308,7 @@
         async function deleteUser(userId, name) {
             if (!confirm(`ยืนยันการลบผู้ใช้ "${name}"? \n\nข้อมูลทั้งหมดของผู้ใช้รายนี้จะถูกลบออกจากระบบถาวร!`)) return;
             try {
-                const res = await fetch(`${VetApi.BASE_URL}/users/${userId}/`, {
-                    method: 'DELETE',
-                    headers: { "Authorization": `Token ${localStorage.getItem("token")}` }
-                });
-                if (!res.ok) {
-                    const d = await res.json().catch(() => ({}));
-                    throw new Error(d.detail || 'ไม่สามารถลบผู้ใช้รายนี้ได้');
-                }
+                await VetApi.deleteUser(userId);
                 loadUsers();
             } catch(e) { alert('เกิดข้อผิดพลาด: ' + e.message); }
         }
