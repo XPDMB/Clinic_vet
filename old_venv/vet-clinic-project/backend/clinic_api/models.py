@@ -23,7 +23,7 @@ class Profile(models.Model):
 
 class Pet(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pets")
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, db_index=True)
     species = models.CharField(max_length=50)
     breed = models.CharField(max_length=50, blank=True, null=True)
     birth_date = models.DateField(blank=True, null=True)
@@ -54,8 +54,8 @@ class Appointment(models.Model):
         (STATUS_CANCELLED, "Cancelled (ยกเลิก)"),
     ]
     pet = models.ForeignKey(Pet, on_delete=models.CASCADE, related_name="appointments")
-    scheduled_at = models.DateTimeField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    scheduled_at = models.DateTimeField(db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
     reason = models.CharField(max_length=200, blank=True, help_text="อาการเบื้องต้น/เหตุผลที่นัดหมาย")
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -76,13 +76,24 @@ class InventoryItem(models.Model):
         ("accessory", "อุปกรณ์/ปลอกคอ"),
         ("other", "อื่นๆ")
     ]
-    item_code = models.CharField(max_length=20, unique=True)
-    name = models.CharField(max_length=200)
+    item_code = models.CharField(max_length=20, unique=True, db_index=True, blank=True)
+    name = models.CharField(max_length=200, db_index=True)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default="other")
     stock_quantity = models.IntegerField(default=0)
     price = models.DecimalField(max_digits=10, decimal_places=2, help_text="ราคาขายต่อหน่วย")
     cost_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="ราคาต้นทุนต่อหน่วย")
     expiry_date = models.DateField()
+
+    def save(self, *args, **kwargs):
+        if not self.item_code:
+            # Auto-generate item code: MED-0001, MED-0002...
+            last_item = InventoryItem.objects.all().order_by('id').last()
+            if not last_item:
+                self.item_code = 'MED-0001'
+            else:
+                last_id = last_item.id
+                self.item_code = 'MED-' + str(last_id + 1).zfill(4)
+        super(InventoryItem, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.name
