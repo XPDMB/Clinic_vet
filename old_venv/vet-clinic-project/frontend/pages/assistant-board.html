@@ -87,6 +87,15 @@
 
             <!-- Inventory Tab (View Only) -->
             <section id="tab-inventory" class="tab-content hidden">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h3 class="text-xl font-bold text-slate-800">สต็อกเวชภัณฑ์คงเหลือ</h3>
+                    <div class="relative w-full md:w-80 group">
+                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="inv-search-input" placeholder="ค้นหาชื่อยา..."
+                            class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-sm"
+                            oninput="filterInventory()">
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="inventory-grid"></div>
             </section>
 
