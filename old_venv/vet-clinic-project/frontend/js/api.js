@@ -9,9 +9,7 @@
   const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   const isDefaultDevPort = window.location.port === "8000";
   
-  const API_BASE = (isDefaultDevPort || !isLocalhost)
-    ? `${window.location.origin}/api/v1`
-    : "http://127.0.0.1:8000/api/v1";
+  const API_BASE = "https://primo.pythonanywhere.com/api/v1";
 
   // API Base URL determined automatically
 
