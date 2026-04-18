@@ -247,9 +247,17 @@
                     <td class="p-5 text-slate-600 font-medium">${name}</td>
                     <td class="p-5">${roleBadge}</td>
                     <td class="p-5 text-right">
-                        <button onclick="openRoleModal(${user.id}, '${name}')" class="px-4 py-2 bg-slate-100 hover:bg-brand-500 hover:text-white text-slate-700 font-bold rounded-xl text-xs transition-colors shadow-sm">
-                            <i class="fas fa-edit mr-1"></i> แก้ไขตำแหน่ง
-                        </button>
+                        <div class="flex justify-end gap-2">
+                            <button onclick="openRoleModal(${user.id}, '${name.replace(/'/g, "\\'")}')"
+                                class="px-4 py-2 bg-slate-100 hover:bg-brand-500 hover:text-white text-slate-700 font-bold rounded-xl text-xs transition-colors shadow-sm">
+                                <i class="fas fa-edit mr-1"></i> แก้ไขตำแหน่ง
+                            </button>
+                            <button onclick="deleteUser(${user.id}, '${name.replace(/'/g, "\\'")}')"
+                                class="w-9 h-9 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-sm"
+                                title="ลบผู้ใช้นี้">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 `;
@@ -312,6 +320,21 @@
             localStorage.removeItem("token");
             localStorage.removeItem("role");
             window.location.href = "/login.html";
+        }
+
+        async function deleteUser(userId, name) {
+            if (!confirm(`ยืนยันการลบผู้ใช้ "${name}"? \n\nข้อมูลทั้งหมดของผู้ใช้รายนี้จะถูกลบออกจากระบบถาวร!`)) return;
+            try {
+                const res = await fetch(`${VetApi.BASE_URL}/users/${userId}/`, {
+                    method: 'DELETE',
+                    headers: { "Authorization": `Token ${localStorage.getItem("token")}` }
+                });
+                if (!res.ok) {
+                    const d = await res.json().catch(() => ({}));
+                    throw new Error(d.detail || 'ไม่สามารถลบผู้ใช้รายนี้ได้');
+                }
+                loadUsers();
+            } catch(e) { alert('เกิดข้อผิดพลาด: ' + e.message); }
         }
     </script>
 </body>
