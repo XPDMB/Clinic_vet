@@ -82,7 +82,7 @@ class InventoryItem(models.Model):
     stock_quantity = models.IntegerField(default=0)
     price = models.DecimalField(max_digits=10, decimal_places=2, help_text="ราคาขายต่อหน่วย")
     cost_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="ราคาต้นทุนต่อหน่วย")
-    expiry_date = models.DateField()
+    expiry_date = models.DateField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.item_code:

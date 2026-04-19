@@ -519,6 +519,21 @@
                         <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">ราคาขาย</label>
                         <input type="number" step="0.01" id="inv-price" class="w-full rounded-2xl border-slate-100 p-4 bg-slate-50 focus:bg-white text-sm font-bold text-teal-600" placeholder="0.00" required />
                     </div>
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">หมวดหมู่</label>
+                        <select id="inv-category" class="w-full rounded-2xl border-slate-100 p-4 bg-slate-50 focus:bg-white text-sm" required>
+                            <option value="medicine">ยาเม็ด/ยาน้ำ</option>
+                            <option value="vaccine">วัคซีน</option>
+                            <option value="supply">เวชภัณฑ์</option>
+                            <option value="food">อาหารสัตว์</option>
+                            <option value="accessory">อุปกรณ์/ปลอกคอ</option>
+                            <option value="other">อื่นๆ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">วันหมดอายุ (ถ้ามี)</label>
+                        <input type="date" id="inv-expiry" class="w-full rounded-2xl border-slate-100 p-4 bg-slate-50 focus:bg-white text-sm" />
+                    </div>
                 </div>
                 <div class="flex gap-3 pt-4">
                     <button type="button" onclick="closeModal('inventory-modal')" class="flex-1 py-4 text-slate-400 font-bold">ยกเลิก</button>
@@ -694,6 +709,8 @@
                 document.getElementById('inv-stock').value = item.stock_quantity;
                 document.getElementById('inv-cost').value = item.cost_price;
                 document.getElementById('inv-price').value = item.price;
+                document.getElementById('inv-category').value = item.category || 'other';
+                document.getElementById('inv-expiry').value = item.expiry_date || '';
             } else {
                 document.getElementById('inv-modal-title').textContent = "เพิ่มข้อมูลยาใหม่";
                 document.getElementById('inv-id').value = "";
@@ -709,7 +726,9 @@
                 item_code: document.getElementById('inv-code').value,
                 stock_quantity: document.getElementById('inv-stock').value,
                 cost_price: document.getElementById('inv-cost').value,
-                price: document.getElementById('inv-price').value
+                price: document.getElementById('inv-price').value,
+                category: document.getElementById('inv-category').value,
+                expiry_date: document.getElementById('inv-expiry').value || null
             };
 
             try {
