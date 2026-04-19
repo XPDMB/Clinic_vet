@@ -12,17 +12,11 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    profile = serializers.SerializerMethodField()
+    profile = ProfileSerializer(read_only=True)
 
     class Meta:
         model = User
         fields = ("id", "username", "email", "profile")
-
-    def get_profile(self, obj):
-        prof = getattr(obj, "profile", None)
-        if prof is None:
-            return None
-        return ProfileSerializer(prof).data
 
 
 class RegisterSerializer(serializers.Serializer):

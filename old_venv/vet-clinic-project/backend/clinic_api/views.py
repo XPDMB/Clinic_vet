@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from django.db.models import Sum, F
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
@@ -215,7 +216,7 @@ class MedicalRecordViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsStaff]
 
     def get_queryset(self):
-        qs = MedicalRecord.objects.select_related("appointment", "appointment__pet")
+        qs = MedicalRecord.objects.select_related("appointment", "appointment__pet").prefetch_related("prescription_lines__inventory_item")
         pet_id = self.request.query_params.get("pet_id")
         if pet_id:
             qs = qs.filter(appointment__pet_id=pet_id)
@@ -243,43 +244,38 @@ class FinancialReportView(APIView):
     def get(self, request):
         days = int(request.query_params.get("days", 7))
         start_date = timezone.now() - timezone.timedelta(days=days)
-        
-        # ค้นหาเวชระเบียนที่จ่ายเงินแล้ว (ORM Fallback)
-        records = MedicalRecord.objects.filter(created_at__gte=start_date, is_paid=True).prefetch_related("prescription_lines")
-        
-        total_revenue = 0
-        total_cost = 0
-        medicine_sales = {} # สรุปรายยา
-        
-        for r in records:
-            total_revenue += r.total_amount
-            for line in r.prescription_lines.all():
-                qty = line.quantity
-                line_revenue = line.unit_price * qty
-                line_cost = line.unit_cost * qty
-                total_cost += line_cost
-                
-                name = getattr(line.inventory_item, "name", "Unknown")
-                if name not in medicine_sales:
-                    medicine_sales[name] = {"qty": 0, "rev": 0}
-                medicine_sales[name]["qty"] += qty
-                medicine_sales[name]["rev"] += line_revenue
 
-        # 🚀 Premium Feature: การเรียกใช้ Stored Procedure (สำหรับ SQL Server)
-        # ถ้าระบบใช้ฐานข้อมูลระดับองค์กร (เช่น MS SQL Server) สามารถเรียกใช้ sp_GetFinancialReport ได้โดยตรง
-        # ซึ่งจะคำนวณไวกว่าเพราะทำใน Database Level
-        '''
-        from django.db import connection
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("EXEC sp_GetFinancialReport @start_date=%s, @end_date=%s", [start_date, timezone.now()])
-                row = cursor.fetchone()
-                if row:
-                    total_patients = row[0]
-                    sp_total_revenue = row[1]
-        except Exception as e:
-            print("Stored Procedure Error:", e)
-        '''
+        # 1. Calculate overall stats (Separately to avoid double-counting from JOINs)
+        revenue_stats = MedicalRecord.objects.filter(
+            created_at__gte=start_date, is_paid=True
+        ).aggregate(
+            total_rev=Sum('total_amount')
+        )
+        
+        cost_stats = PrescriptionLine.objects.filter(
+            medical_record__created_at__gte=start_date,
+            medical_record__is_paid=True
+        ).aggregate(
+            total_cost=Sum(F('unit_cost') * F('quantity'))
+        )
+
+        total_revenue = float(revenue_stats['total_rev'] or 0)
+        total_cost = float(cost_stats['total_cost'] or 0)
+
+        # 2. Group by medicine (Medicine Sales Summary)
+        medicine_sales_qs = PrescriptionLine.objects.filter(
+            medical_record__created_at__gte=start_date,
+            medical_record__is_paid=True
+        ).values(
+            name=F('inventory_item__name')
+        ).annotate(
+            qty=Sum('quantity'),
+            rev=Sum(F('unit_price') * F('quantity'))
+        ).order_by('-rev')
+
+        medicine_sales = {}
+        for item in medicine_sales_qs:
+            medicine_sales[item['name']] = {"qty": item['qty'], "rev": float(item['rev'])}
 
         return Response({
             "period_days": days,
