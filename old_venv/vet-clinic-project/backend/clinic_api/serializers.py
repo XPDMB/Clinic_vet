@@ -23,6 +23,8 @@ class RegisterSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=150)
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=6)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    address = serializers.CharField(max_length=500, required=False, allow_blank=True)
     role = serializers.ChoiceField(
         choices=[Profile.ROLE_CUSTOMER, Profile.ROLE_VET, Profile.ROLE_ASSISTANT], default=Profile.ROLE_CUSTOMER
     )
@@ -39,6 +41,8 @@ class RegisterSerializer(serializers.Serializer):
         Profile.objects.create(
             user=user,
             display_name=validated_data["name"],
+            phone=validated_data.get("phone", ""),
+            address=validated_data.get("address", ""),
             role=validated_data.get("role", Profile.ROLE_CUSTOMER),
         )
         return user

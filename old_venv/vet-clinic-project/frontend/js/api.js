@@ -8,10 +8,16 @@
   // หากเรารันผ่าน ngrok หรือ domain อื่นๆ ให้ใช้ origin นั้นๆ เป็น base API ทันที
   const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   
-  // Dynamic API Base URL
-  const API_BASE = isLocalhost 
-    ? "http://127.0.0.1:8000/api/v1" 
-    : "https://primo.pythonanywhere.com/api/v1";
+  // Dynamic API Base URL — ตรวจสอบอัตโนมัติว่ารันผ่าน ngrok หรือ localhost
+  const API_BASE = (function() {
+    const host = window.location.host;
+    // ถ้าเราเปิดผ่าน ngrok หรือ pythonanywhere ให้ใช้ host นั้นเป็น API ทันที
+    if (host.includes("ngrok") || host.includes("pythonanywhere")) {
+      return `${window.location.protocol}//${host}/api/v1`;
+    }
+    // ถ้าเป็น localhost หรือรันผ่านไฟล์ปกติ ให้ชี้ไปที่เซิร์ฟเวอร์จำลองของเรา
+    return "http://127.0.0.1:8000/api/v1";
+  })();
 
   // API Base URL determined automatically
 
